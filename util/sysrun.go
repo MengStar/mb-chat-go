@@ -33,8 +33,9 @@ func init() {
     DBConn = InitDB()
 
     // xxd 启动时根据时间生成token
-    timeStr := Int642String(GetUnixTime())
-    Token = []byte(GetMD5(timeStr))
+    //timeStr := Int642String(GetUnixTime())
+    //Token = []byte(GetMD5(timeStr))
+    Token = []byte("135f50438d018f8c0ba127959e52b34e")
     if IsTest {
         Printf("Server test model is %t \n", IsTest)
         Printf("Test token: %s \n", string(Token))

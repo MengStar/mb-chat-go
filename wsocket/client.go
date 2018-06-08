@@ -67,12 +67,13 @@ type SendMsg struct {
 
 //解析数据.
 func dataProcessing(message []byte, client *Client) error {
+
     parseData, err := api.ApiParse(message, util.Token)
     if err != nil {
         util.LogError().Println("receive client message error")
         return err
     }
-
+    util.LogInfo().Println(parseData);
     if util.IsTest && parseData.Test() {
         return testSwitchMethod(message, parseData, client)
     }
