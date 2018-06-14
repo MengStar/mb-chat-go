@@ -14,7 +14,7 @@ import "xxd/util"
 // hub maintains the set of active clients and broadcasts messages to the
 // clients.
 type Hub struct {
-    clients map[string]map[int64]*Client // Registered clients. map[ranzhiName][clientID]*Client
+    clients map[int64]map[string]map[int64]*Client // Registered clients. map[accountId]map[ranzhiName][clientID]*Client
 
     // Inbound messages from the clients.
     multicast chan SendMsg
@@ -30,11 +30,11 @@ func newHub() *Hub {
         broadcast:  make(chan SendMsg),
         register:   make(chan *ClientRegister),
         unregister: make(chan *Client),
-        clients:    make(map[string]map[int64]*Client),
+        clients:    make(map[int64]map[string]map[int64]*Client),
     }
 
     for ranzhiName := range util.Config.RanzhiServer {
-        hub.clients[ranzhiName] = map[int64]*Client{}
+        hub.clients[0][ranzhiName] = map[int64]*Client{}
     }
 
     return hub
@@ -46,24 +46,24 @@ func (h *Hub) run() {
         case cRegister := <-h.register:
 
             // 根据传入的client对指定服务器的userid进行socket注册
-            if _, ok := h.clients[cRegister.client.serverName]; !ok {
+            if _, ok := h.clients[0][cRegister.client.serverName]; !ok {
                 cRegister.retClient <- cRegister.client
                 close(cRegister.client.send)
                 continue
             }
             go util.DBUserLogin(cRegister.client.serverName, cRegister.client.userID)
             // 判断用户是否已经存在
-            if client, ok := h.clients[cRegister.client.serverName][cRegister.client.userID]; ok {
+            if client, ok := h.clients[0][cRegister.client.serverName][cRegister.client.userID]; ok {
                 //重复登录,返回旧的client
                 client.repeatLogin = true
                 cRegister.retClient <- client
 
                 //用新的客户端覆盖旧的客户端
-                h.clients[cRegister.client.serverName][cRegister.client.userID] = cRegister.client
+                h.clients[0][cRegister.client.serverName][cRegister.client.userID] = cRegister.client
                 continue
             }
 
-            h.clients[cRegister.client.serverName][cRegister.client.userID] = cRegister.client
+            h.clients[0][cRegister.client.serverName][cRegister.client.userID] = cRegister.client
             cRegister.retClient <- cRegister.client
 
         case client := <-h.unregister:
@@ -74,16 +74,16 @@ func (h *Hub) run() {
             }
 
             // 收到失败的socket就进行注销
-            if _, ok := h.clients[client.serverName][client.userID]; ok {
+            if _, ok := h.clients[0][client.serverName][client.userID]; ok {
                 close(client.send)
-                delete(h.clients[client.serverName], client.userID)
+                delete(h.clients[0][client.serverName], client.userID)
                 util.DBInsertOffline(client.serverName, client.userID)
             }
 
         case sendMsg := <-h.multicast:
             // 对指定的用户群发送消息
             for _, userID := range sendMsg.usersID {
-                client, ok := h.clients[sendMsg.serverName][userID]
+                client, ok := h.clients[0][sendMsg.serverName][userID]
                 if !ok {
                     continue
                 }
@@ -92,20 +92,20 @@ func (h *Hub) run() {
                 case client.send <- sendMsg.message:
                 default:
                     close(client.send)
-                    delete(h.clients[client.serverName], client.userID)
+                    delete(h.clients[0][client.serverName], client.userID)
                 }
             }
 
         case sendMsg := <-h.broadcast:
             // 对所有的在线用户发送消息
-            for userID := range h.clients[sendMsg.serverName] {
+            for userID := range h.clients[0][sendMsg.serverName] {
 
-                client := h.clients[sendMsg.serverName][userID]
+                client := h.clients[0][sendMsg.serverName][userID]
                 select {
                 case client.send <- sendMsg.message:
                 default:
                     close(client.send)
-                    delete(h.clients[client.serverName], client.userID)
+                    delete(h.clients[0][client.serverName], client.userID)
                 }
             }
         } // run select

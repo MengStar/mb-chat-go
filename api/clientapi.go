@@ -343,6 +343,9 @@ func ReportAndGetNotify(server string) (map[int64][]byte, error) {
     }
 
     decodeData, _ := ApiParse(retMessage, ranzhiServer.RanzhiToken)
+
+    util.LogInfo().Println("ReportAndGetNotify hyperttp request info :", decodeData)
+
     if decodeData.Result() != "success" {
         return nil, err
     }
@@ -389,6 +392,8 @@ func CheckUserChange(serverName string) ([]byte, error) {
         return nil, err
     }
     decodeData, _ := ApiParse(retMessage, ranzhiServer.RanzhiToken)
+    util.LogInfo().Println("CheckUserChange hyperttp request info :", decodeData)
+
     if decodeData.Result() != "success" {
         util.LogError().Println("request info status:", decodeData.Result())
         return nil, err
