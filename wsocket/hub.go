@@ -9,7 +9,9 @@
  */
 package wsocket
 
-import "xxd/util"
+import (
+    "xxd/util"
+)
 
 // hub maintains the set of active clients and broadcasts messages to the
 // clients.
@@ -31,6 +33,11 @@ func newHub() *Hub {
         register:   make(chan *ClientRegister),
         unregister: make(chan *Client),
         clients:    make(map[int64]map[string]map[int64]*Client),
+    }
+
+    //预留10个账号位置
+    for a := int64(0); a < 10; a++ {
+        hub.clients[a] = map[string]map[int64] *Client{}
     }
 
     for ranzhiName := range util.Config.RanzhiServer {

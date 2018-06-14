@@ -75,7 +75,7 @@ func cronReport(hub *Hub) {
                     if messages != nil && err == nil {
                         for userID, message := range messages {
                             if client, ok := hub.clients[0][server][userID]; ok {
-                                client.send <- message
+                                client.send <- message[0]
                             }
                         }
                     }

@@ -97,6 +97,15 @@ func (pd ParseData) UserID() int64 {
     return int64(ret.(float64))
 }
 
+//获取AccountId
+func (pd ParseData) AccountId() int64 {
+    ret, ok := pd["accountId"]
+    if !ok {
+        return -1
+    }
+
+    return int64(ret.(float64))
+}
 //获取result
 func (pd ParseData) Result() string {
     ret, ok := pd["result"]
