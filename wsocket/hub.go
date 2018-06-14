@@ -20,6 +20,7 @@ type Hub struct {
 
     // Inbound messages from the clients.
     multicast chan SendMsg
+    //todo 去掉广播
     broadcast chan SendMsg
 
     register   chan *ClientRegister // Register requests from the clients.

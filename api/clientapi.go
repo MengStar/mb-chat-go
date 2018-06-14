@@ -165,7 +165,7 @@ func TransitData(clientData []byte, serverName string) ([]byte, []int64, error) 
 }
 
 //获取用户列表
-func UserGetlist(serverName string, userID int64) ([]byte, error) {
+func UserGetlist(serverName string, userID int64,accountId int64) ([]byte, error) {
 	ranzhiServer, ok := RanzhiServer(serverName)
 	if !ok {
 		util.LogError().Println("no ranzhi server name")
@@ -173,7 +173,7 @@ func UserGetlist(serverName string, userID int64) ([]byte, error) {
 	}
 
 	// 固定的json格式
-	request := []byte(`{"module":"chat","method":"userGetlist","params":[""],"userID":` + util.Int642String(userID) + `}`)
+	request := []byte(`{"module":"chat","method":"userGetlist","params":[""],"accountId":`+  util.Int642String(accountId)+`,"userID":` + util.Int642String(userID) + `}`)
 
 	message, err := aesEncrypt(request, ranzhiServer.RanzhiToken)
 	if err != nil {
@@ -187,6 +187,10 @@ func UserGetlist(serverName string, userID int64) ([]byte, error) {
 		util.LogError().Println("hyperttp request info error:", err)
 		return nil, err
 	}
+
+	decodeData, _ := ApiParse(retMessage, ranzhiServer.RanzhiToken)
+
+	util.LogInfo().Println("UserGetlist hyperttp decodeData:", decodeData)
 
 	//由于http服务器和客户端的token不一致，所以需要进行交换
 	retData, err := SwapToken(retMessage, ranzhiServer.RanzhiToken, util.Token)
@@ -411,11 +415,14 @@ func CheckUserChange(serverName string) ([]byte, error) {
 		return nil, err
 	}
 
+
+
 	if decodeData["data"] == "no" {
 		return nil, nil
 	}
 
-	return UserGetlist(serverName, 0)
+	// todo userlist 也要修改格式
+	return UserGetlist(serverName, 0,0)
 }
 
 // 与客户端间的错误通知
