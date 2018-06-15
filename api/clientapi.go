@@ -201,7 +201,6 @@ func UserGetlist(serverName string, userID int64, accountId int64) ([]byte, erro
 
 	return retData, nil
 }
-
 //用户文件SessionID 作用于文件下载 为适配web版客户端
 func UserFileSessionID(serverName string, userID int64) ([]byte, error) {
 	sessionID := util.GetMD5(serverName + util.Int642String(userID) + util.Int642String(util.GetUnixTime()))

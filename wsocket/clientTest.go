@@ -62,7 +62,7 @@ func chatTestLogin(parseData api.ParseData, client *Client) error {
 
 func chatTestMessage(parseData api.ParseData, client *Client) error {
     message := api.ApiUnparse(parseData, util.Token)
-    client.hub.broadcast <- SendMsg{serverName: client.serverName, message: message}
+    client.hub.multicast <- SendMsg{serverName: client.serverName, message: message,accountId:0}
 
     return nil
 }

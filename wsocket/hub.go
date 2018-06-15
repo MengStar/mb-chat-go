@@ -19,9 +19,11 @@ type Hub struct {
     clients map[int64]map[string]map[int64]*Client // Registered clients. map[accountId]map[ranzhiName][clientID]*Client
 
     // Inbound messages from the clients.
+
+    //todo ：accountId
     multicast chan SendMsg
     //todo 去掉广播
-    broadcast chan SendMsg
+    //broadcast chan SendMsg
 
     register   chan *ClientRegister // Register requests from the clients.
     unregister chan *Client         // Unregister requests from clients.
@@ -30,7 +32,7 @@ type Hub struct {
 func newHub() *Hub {
     hub := &Hub{
         multicast:  make(chan SendMsg),
-        broadcast:  make(chan SendMsg),
+       // broadcast:  make(chan SendMsg),
         register:   make(chan *ClientRegister),
         unregister: make(chan *Client),
         clients:    make(map[int64]map[string]map[int64]*Client),
@@ -89,33 +91,49 @@ func (h *Hub) run() {
             }
 
         case sendMsg := <-h.multicast:
-            // 对指定的用户群发送消息
-            for _, userID := range sendMsg.usersID {
-                client, ok := h.clients[0][sendMsg.serverName][userID]
-                if !ok {
-                    continue
-                }
+            if len(sendMsg.usersID) == 0 {
+                // 对指定的用户群发送消息
+                for _, userID := range sendMsg.usersID {
+                    client, ok := h.clients[sendMsg.accountId][sendMsg.serverName][userID]
+                    if !ok {
+                        continue
+                    }
 
-                select {
-                case client.send <- sendMsg.message:
-                default:
-                    close(client.send)
-                    delete(h.clients[0][client.serverName], client.userID)
+                    select {
+                    case client.send <- sendMsg.message:
+                    default:
+                        close(client.send)
+                        delete(h.clients[sendMsg.accountId][client.serverName], client.userID)
+                    }
+                }
+            }else {
+                //对所有的在线用户发送消息accountId 下面
+                for userID := range h.clients[sendMsg.accountId][sendMsg.serverName] {
+
+                    client := h.clients[sendMsg.accountId][sendMsg.serverName][userID]
+                    select {
+                    case client.send <- sendMsg.message:
+                    default:
+                        close(client.send)
+                        delete(h.clients[sendMsg.accountId][client.serverName], client.userID)
+                    }
                 }
             }
 
-        case sendMsg := <-h.broadcast:
-            // 对所有的在线用户发送消息
-            for userID := range h.clients[0][sendMsg.serverName] {
 
-                client := h.clients[0][sendMsg.serverName][userID]
-                select {
-                case client.send <- sendMsg.message:
-                default:
-                    close(client.send)
-                    delete(h.clients[0][client.serverName], client.userID)
-                }
-            }
+
+        //case sendMsg := <-h.broadcast:
+        //    // 对所有的在线用户发送消息
+        //    for userID := range h.clients[0][sendMsg.serverName] {
+		//
+        //        client := h.clients[0][sendMsg.serverName][userID]
+        //        select {
+        //        case client.send <- sendMsg.message:
+        //        default:
+        //            close(client.send)
+        //            delete(h.clients[0][client.serverName], client.userID)
+        //        }
+        //    }
         } // run select
     } // run for
 }

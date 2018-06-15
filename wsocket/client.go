@@ -61,6 +61,7 @@ type ClientRegister struct {
 // send message struct
 type SendMsg struct {
     serverName string // send ranzhi server name
+    accountId  int64
     usersID    []int64
     message    []byte
 }
@@ -182,7 +183,7 @@ func chatLogin(parseData api.ParseData, client *Client) error {
 
     // 推送当前登录用户信息给其他在线用户
     // 因为是broadcast类型，所以不需要初始化userID
-    client.hub.broadcast <- SendMsg{serverName: client.serverName, message: loginData}
+    client.hub.multicast <- SendMsg{serverName: client.serverName, message: loginData,accountId:0}
 
     cRegister := &ClientRegister{client: client, retClient: make(chan *Client)}
     defer close(cRegister.retClient)
@@ -239,11 +240,11 @@ func transitData(message []byte, userID int64, client *Client) error {
 //If the user is empty, broadcast messages.
 func X2cSend(serverName string, sendUsers []int64, message []byte, client *Client) error {
     if len(sendUsers) == 0 {
-        client.hub.broadcast <- SendMsg{serverName: serverName, message: message}
+        client.hub.multicast <- SendMsg{serverName: serverName, message: message,accountId:0}
         return nil
     }
 
-    client.hub.multicast <- SendMsg{serverName: serverName, usersID: sendUsers, message: message}
+    client.hub.multicast <- SendMsg{serverName: serverName, usersID: sendUsers, message: message,accountId:0}
     return nil
 }
 
