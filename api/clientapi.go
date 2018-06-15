@@ -34,6 +34,10 @@ func ChatLogin(clientData ParseData) ([]byte, int64,int64, bool) {
 
 	// 解析http服务器的数据,返回 ParseData 类型的数据
 	retData, err := ApiParse(retMessage, ranzhiServer.RanzhiToken)
+	// 解析accountId
+	
+	accountId ,err :=util.String2Int64(retData["accountId"].(string))
+
 	if err != nil {
 		util.LogError().Println("api parse error:", err)
 		return nil, -1,-1, false
@@ -56,7 +60,7 @@ func ChatLogin(clientData ParseData) ([]byte, int64,int64, bool) {
 	// 3、发布会登录的accountId
 	// 4、返回登录的结果
 	//todo 获取accountId
-	return retMessage, retData.loginUserID(), 0,result
+	return retMessage, retData.loginUserID(), accountId,result
 }
 
 //客户端退出

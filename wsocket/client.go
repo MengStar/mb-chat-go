@@ -137,6 +137,8 @@ func chatLogin(parseData api.ParseData, client *Client) error {
         client.serverName = util.Config.DefaultServer
     }
 
+    util.LogInfo().Println("chatLogin client userId:", client.userID,"  accountId:",client.accountId)
+
     // 生成并存储文件会员
     userFileSessionID, err := api.UserFileSessionID(client.serverName, client.userID)
     if err != nil {
