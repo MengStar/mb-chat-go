@@ -87,8 +87,11 @@ func cronReport(hub *Hub) {
                 for server := range util.Config.RanzhiServer {
                     getList, err := api.CheckUserChange(server)
                     if getList != nil && err == nil {
-                        for _, client := range hub.clients[0][server] {
-                            client.send <- getList;
+
+                        for accountId, list := range getList {
+                            if client, ok := hub.clients[accountId][server][accountId]; ok {
+                                client.send <- list
+                            }
                         }
                     }
                 }

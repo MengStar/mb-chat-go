@@ -73,7 +73,7 @@ func dataProcessing(message []byte, client *Client) error {
         util.LogError().Println("receive client message error")
         return err
     }
-    util.LogInfo().Println(parseData);
+    util.LogInfo().Println("receive client message:",parseData);
     if util.IsTest && parseData.Test() {
         return testSwitchMethod(message, parseData, client)
     }
@@ -145,8 +145,7 @@ func chatLogin(parseData api.ParseData, client *Client) error {
     client.send <- userFileSessionID
 
     // 获取所有用户列表
-    //todo
-    getList, err := api.UserGetlist(client.serverName, client.userID,0)
+    getList, err := api.UserGetlist(client.serverName, client.userID,-1)
     if err != nil {
         util.LogError().Println("chat user get user list error:", err)
         //返回给客户端登录失败的错误信息

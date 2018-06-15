@@ -165,7 +165,7 @@ func TransitData(clientData []byte, serverName string) ([]byte, []int64, error) 
 }
 
 //获取用户列表
-func UserGetlist(serverName string, userID int64,accountId int64) ([]byte, error) {
+func UserGetlist(serverName string, userID int64, accountId int64) ([]byte, error) {
 	ranzhiServer, ok := RanzhiServer(serverName)
 	if !ok {
 		util.LogError().Println("no ranzhi server name")
@@ -173,7 +173,7 @@ func UserGetlist(serverName string, userID int64,accountId int64) ([]byte, error
 	}
 
 	// 固定的json格式
-	request := []byte(`{"module":"chat","method":"userGetlist","params":[""],"accountId":`+  util.Int642String(accountId)+`,"userID":` + util.Int642String(userID) + `}`)
+	request := []byte(`{"module":"chat","method":"userGetlist","params":[""],"accountId":` + util.Int642String(accountId) + `,"userID":` + util.Int642String(userID) + `}`)
 
 	message, err := aesEncrypt(request, ranzhiServer.RanzhiToken)
 	if err != nil {
@@ -385,7 +385,7 @@ func ReportAndGetNotify(server string) (map[int64]map[int64][]byte, error) {
 	return messageList, nil
 }
 
-func CheckUserChange(serverName string) ([]byte, error) {
+func CheckUserChange(serverName string) (map[int64][]byte, error) {
 	ranzhiServer, ok := RanzhiServer(serverName)
 	if !ok {
 		util.LogError().Println("no ranzhi server name")
@@ -415,14 +415,19 @@ func CheckUserChange(serverName string) ([]byte, error) {
 		return nil, err
 	}
 
-
-
 	if decodeData["data"] == "no" {
 		return nil, nil
 	}
+	//userlist
+	accountIdAndUserList := make(map[int64][]byte)
 
-	// todo userlist 也要修改格式
-	return UserGetlist(serverName, 0,0)
+	for _, val := range decodeData["accountIds"].([]interface{}) {
+
+		accountIdString := val.(map[string]interface{})["account_id"].(string)
+		accountId, _ := util.String2Int64(accountIdString)
+		accountIdAndUserList[accountId], err = UserGetlist(serverName, 0, accountId)
+	}
+	return accountIdAndUserList, nil
 }
 
 // 与客户端间的错误通知
