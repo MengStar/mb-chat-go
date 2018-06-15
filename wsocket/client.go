@@ -49,6 +49,7 @@ type Client struct {
     send        chan []byte     // Buffered channel of outbound messages.
     serverName  string          // User server
     userID      int64           // Send to user id
+    accountId   int64
     repeatLogin bool
     cVer        string //client version
 }
@@ -115,7 +116,7 @@ func switchMethod(message []byte, parseData api.ParseData, client *Client) error
 
 //用户登录
 func chatLogin(parseData api.ParseData, client *Client) error {
-    loginData, userID, ok := api.ChatLogin(parseData)
+    loginData, userID, accountId,ok := api.ChatLogin(parseData)
     if userID == -1 {
         util.LogError().Println("chat login error")
         return util.Errorf("%s", "chat login error")
@@ -130,6 +131,7 @@ func chatLogin(parseData api.ParseData, client *Client) error {
     client.send <- loginData
 
     client.userID = userID
+    client.accountId = accountId
     client.serverName = parseData.ServerName()
     if client.serverName == "" {
         client.serverName = util.Config.DefaultServer
@@ -183,7 +185,7 @@ func chatLogin(parseData api.ParseData, client *Client) error {
 
     // 推送当前登录用户信息给其他在线用户
     // 因为是broadcast类型，所以不需要初始化userID
-    client.hub.multicast <- SendMsg{serverName: client.serverName, message: loginData,accountId:0}
+    client.hub.multicast <- SendMsg{serverName: client.serverName, message: loginData,accountId:client.accountId}
 
     cRegister := &ClientRegister{client: client, retClient: make(chan *Client)}
     defer close(cRegister.retClient)
@@ -212,7 +214,7 @@ func chatLogout(userID int64, client *Client) error {
         return err
     }
     util.DelUid(client.serverName, util.Int642String(client.userID))
-    return X2cSend(client.serverName, sendUsers, x2cMessage, client)
+    return X2cSend(client.serverName, sendUsers,client.accountId, x2cMessage, client)
 }
 
 //交换数据
@@ -233,18 +235,18 @@ func transitData(message []byte, userID int64, client *Client) error {
         return err
     }
 
-    return X2cSend(client.serverName, sendUsers, x2cMessage, client)
+    return X2cSend(client.serverName, sendUsers, client.accountId,x2cMessage, client)
 }
 
 //Send the message from XXD to XXC.
 //If the user is empty, broadcast messages.
-func X2cSend(serverName string, sendUsers []int64, message []byte, client *Client) error {
+func X2cSend(serverName string, sendUsers []int64,accountId int64, message []byte, client *Client) error {
     if len(sendUsers) == 0 {
-        client.hub.multicast <- SendMsg{serverName: serverName, message: message,accountId:0}
+        client.hub.multicast <- SendMsg{serverName: serverName, message: message,accountId:accountId}
         return nil
     }
 
-    client.hub.multicast <- SendMsg{serverName: serverName, usersID: sendUsers, message: message,accountId:0}
+    client.hub.multicast <- SendMsg{serverName: serverName, usersID: sendUsers, message: message,accountId:accountId}
     return nil
 }
 

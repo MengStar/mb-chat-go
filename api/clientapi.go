@@ -18,43 +18,45 @@ import (
 var newline = []byte{'\n'}
 
 // 从客户端发来的登录请求，通过该函数转发到后台服务器进行登录验证
-func ChatLogin(clientData ParseData) ([]byte, int64, bool) {
+func ChatLogin(clientData ParseData) ([]byte, int64,int64, bool) {
 	ranzhiServer, ok := RanzhiServer(clientData.ServerName())
 	if !ok {
 		util.LogError().Println("no ranzhi server name")
-		return nil, -1, false
+		return nil, -1,-1,false
 	}
 
 	// 到http服务器请求，返回加密的结果
 	retMessage, err := hyperttp.RequestInfo(ranzhiServer.RanzhiAddr, ApiUnparse(clientData, ranzhiServer.RanzhiToken))
 	if err != nil {
 		util.LogError().Println("hyperttp request info error:", err)
-		return nil, -1, false
+		return nil, -1,-1, false
 	}
 
 	// 解析http服务器的数据,返回 ParseData 类型的数据
 	retData, err := ApiParse(retMessage, ranzhiServer.RanzhiToken)
 	if err != nil {
 		util.LogError().Println("api parse error:", err)
-		return nil, -1, false
+		return nil, -1,-1, false
 	}
 
 	retMessage, err = SwapToken(retMessage, ranzhiServer.RanzhiToken, util.Token)
 	if err != nil {
 		util.LogError().Println("chat login swap token error:", err)
-		return nil, -1, false
+		return nil, -1,-1, false
 	}
 
 	result := retData.Result() == "success"
 	if !result {
-		return nil, 0, false
+		return nil, 0, -1, false
 	}
 
 	// 返回值：
 	// 1、返回给客户端加密后的数据
 	// 2、返回用户的ID
-	// 3、返回登录的结果
-	return retMessage, retData.loginUserID(), result
+	// 3、发布会登录的accountId
+	// 4、返回登录的结果
+	//todo 获取accountId
+	return retMessage, retData.loginUserID(), 0,result
 }
 
 //客户端退出
